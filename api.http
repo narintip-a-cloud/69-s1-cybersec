@@ -1,39 +1,40 @@
-# API
+### 1. Register / Signup (สมัคร User ใหม่)
+POST http://localhost:9091/api/auth/local/register
+Content-Type: application/json
 
-## Login
+{
+  "username": "phatsanun_user",
+  "email": "user@rmutp.ac.th",
+  "password": "Phatsanun@0969272021"
+}
+
+### 2. Login User (เข้าสู่ระบบ User)
+POST http://localhost:9091/api/auth/local
+Content-Type: application/json
+
+{
+  "identifier": "user@rmutp.ac.th",
+  "password": "Phatsanun@0969272021"
+}
+
+### 3. Login Admin (เข้าสู่ระบบ Admin)
 POST http://localhost:9091/admin/login
 Content-Type: application/json
 
 {
-    "email": "phatasanun-p@rmu.ac.th",
-    "password": "Phatsanun@0969272021",
-    "rememberMe": false
+  "email": "phatsanun-p@rmutp.ac.th",
+  "password": "Phatsanun@0969272021",
+  "rememberMe": false
 }
 
-###
-
-## Forgot
-POST http://localhost:9091/admin/forgot-password
+### 4. Forgot Password
+POST http://localhost:9091/api/auth/forgot-password
 Content-Type: application/json
 
 {
-    "email": "phatasanun-p@rmu.ac.th"
+  "email": "user@rmutp.ac.th"
 }
 
-###
-
-## Profile
-GET http://localhost:9091/admin/me
-Authorization: Bearer <ใส่_TOKEN_ที่ได้จากตอน_LOGIN>
-
-###
-
-## Register / Signup
-POST http://localhost:9091/admin/register
-Content-Type: application/json
-
-{
-    "username": "satang",
-    "email": "phatasanun-p@rmu.ac.th",
-    "password": "Phatsanun@0969272021"
-}
+### 5. Profile (ดูข้อมูล User)
+GET http://localhost:9091/api/users/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzg3Njc0NTg3LCJleHAiOjE3OTAyNjY1ODd9.J-VvFi12oOKZVaJOS2aTy5NAb0TVlGtufe9GZCIBTZs
