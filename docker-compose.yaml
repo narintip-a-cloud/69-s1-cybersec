@@ -22,6 +22,13 @@ services:
     volumes:
       - ./data-postgres:/var/lib/postgresql/data
 
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: 69-s1-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   app:
     image: prawee/strapi
     container_name: 69-s1-app
@@ -34,8 +41,14 @@ services:
       - DATABASE_NAME=${DATABASE_NAME}
       - DATABASE_USERNAME=${DATABASE_USERNAME}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - SMTP_HOST=mailhog
+      - SMTP_PORT=1025
+      - SMTP_FROM=no-reply@cybersec.local
+    volumes:
+      - ./config/plugins.js:/opt/app/config/plugins.js
     depends_on:
       - db
+      - mailhog
 
 volumes:
   data-postgres:
