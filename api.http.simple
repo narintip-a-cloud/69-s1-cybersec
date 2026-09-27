@@ -11,11 +11,22 @@
 @userPassword = ""
 
 ##################################################
-# 1. ADMIN OPERATIONS
-# JWT ของ admin ใช้ได้กับ /admin/* เท่านั้น ห้ามเอาไปยิง /api/*
+# 1.Admin
 ##################################################
 
-### 1. Register Admin (ทำได้ครั้งเดียว ถ้ามี super admin อยู่แล้วจะได้ 400)
+## 1.1 Login
+# @name adminLogin
+# ยิงซ้ำ ๆ ติด ๆ จะได้ 429 (rate limit) ต้องรอสัก 3-5 นาที
+POST {{baseUrl}}/admin/login
+Content-Type: application/json
+
+{
+    "email": "{{adminEmail}}",
+    "password": "{{adminPassword}}"
+}
+
+## 1.2 Signup / Register
+# ทำได้ครั้งเดียว ถ้ามี super admin อยู่แล้วจะได้ 400
 POST {{baseUrl}}/admin/register-admin
 Content-Type: application/json
 
@@ -27,18 +38,8 @@ Content-Type: application/json
     "registrationToken": ""
 }
 
-### 2. Login Admin
-# @name adminLogin
-# ยิงซ้ำ ๆ ติด ๆ จะได้ 429 (rate limit) ต้องรอสักพักก่อนลองใหม่
-POST {{baseUrl}}/admin/login
-Content-Type: application/json
-
-{
-    "email": "{{adminEmail}}",
-    "password": "{{adminPassword}}"
-}
-
-### 3. Forgot Password Admin (เปิด MailHog เพื่อเอา code)
+## 1.3 Forgot Password
+# อีเมลจะเข้า MailHog ให้เปิด http://localhost:8025 แล้วเอา code จากลิงก์
 POST {{baseUrl}}/admin/forgot-password
 Content-Type: application/json
 
@@ -46,7 +47,8 @@ Content-Type: application/json
     "email": "{{adminEmail}}"
 }
 
-### 4. Reset Password Admin (field คือ resetPasswordToken ไม่ใช่ code)
+## 1.3.1 Reset Password
+# ชื่อฟิลด์คือ resetPasswordToken ไม่ใช่ code (code ของ admin ยาว 40 ตัวอักษร)
 POST {{baseUrl}}/admin/reset-password
 Content-Type: application/json
 
@@ -55,79 +57,16 @@ Content-Type: application/json
     "password": "{{adminPassword}}"
 }
 
-### 5. Profile Admin
+## 1.4 Profile
 GET {{baseUrl}}/admin/users/me
 Authorization: Bearer {{adminLogin.response.body.data.token}}
 
-### 6. List Admin Users
+## 1.5 List Admin Users
 GET {{baseUrl}}/admin/users
 Authorization: Bearer {{adminLogin.response.body.data.token}}
 
-##################################################
-# 2. USER OPERATIONS
-##################################################
-
-### 1. Register User
-POST {{baseUrl}}/api/auth/local/register
-Content-Type: application/json
-
-{
-    "username": "{{userUsername}}",
-    "email": "{{userEmail}}",
-    "password": "{{userPassword}}"
-}
-
-### 2. Login User
-# @name userLogin
-POST {{baseUrl}}/api/auth/local
-Content-Type: application/json
-
-{
-    "identifier": "{{userEmail}}",
-    "password": "{{userPassword}}"
-}
-
-### 3. Forgot Password User (เปิด MailHog เพื่อเอา code)
-POST {{baseUrl}}/api/auth/forgot-password
-Content-Type: application/json
-
-{
-    "email": "{{userEmail}}"
-}
-
-### 4. Reset Password User (ต้องมี passwordConfirmation ด้วย)
-POST {{baseUrl}}/api/auth/reset-password
-Content-Type: application/json
-
-{
-    "code": "",
-    "password": "{{userPassword}}",
-    "passwordConfirmation": "{{userPassword}}"
-}
-
-### 5. Profile User
-GET {{baseUrl}}/api/users/me
-Authorization: Bearer {{userLogin.response.body.jwt}}
-
-### Update Profile User
-# ยังใช้ไม่ได้ครับ ได้ 403 เพราะ role "Authenticated" ยังไม่มี permission
-# plugin::users-permissions.user.update (และไม่มี action นี้ในรายการ permission ของระบบ)
-# ต้องไปเปิดที่ Settings > Users & Permissions > Roles > Authenticated ก่อน
-# PUT {{baseUrl}}/api/users/me
-# Content-Type: application/json
-# Authorization: Bearer {{userLogin.response.body.jwt}}
-#
-# {
-#     "username": "{{userUsername}}"
-# }
-
-##################################################
-# 3. API TOKEN
-# /api/<content-type> ใช้ API Token เท่านั้น (JWT ของ admin/user ใช้ไม่ได้ -> 401)
-# สร้างครั้งเดียวแล้วเก็บ accessKey ไว้ ค่า accessKey จะโชว์ครั้งเดียวเท่านั้น
-##################################################
-
-### 1. Create API Token (full-access)
+## 1.6 Create API Token
+# accessKey โชว์ครั้งเดียว ต้องเก็บไว้แล้วเอาไปใส่ Authorization ของหัวข้อ 3
 # @name createApiToken
 POST {{baseUrl}}/admin/api-tokens
 Content-Type: application/json
@@ -139,130 +78,84 @@ Authorization: Bearer {{adminLogin.response.body.data.token}}
     "type": "full-access"
 }
 
-### 2. List API Tokens (ไม่คืนค่า accessKey)
+## 1.7 List API Tokens
 GET {{baseUrl}}/admin/api-tokens
 Authorization: Bearer {{adminLogin.response.body.data.token}}
 
 ##################################################
-# 4. CONTENT TYPES
-# ทุก request ในหัวข้อนี้ต้องมี Authorization: Bearer <apiKey>
-# ตัวอย่างนี้ใช้ {{createApiToken.response.body.data.accessKey}}
-# ถ้า Public/Authenticated role ยังไม่ได้เปิด permission
-# ให้ไปเปิดที่ Settings > Users & Permissions > Roles ก่อน
+# 2.User
 ##################################################
 
-### SUBJECT
-
-#### 1. Create Subject
-# @name createSubject
-POST {{baseUrl}}/api/subjects
+## 2.1 Login
+# @name userLogin
+POST {{baseUrl}}/api/auth/local
 Content-Type: application/json
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
 
 {
-    "data": {
-        "name": "Cyber Security"
-    }
+    "identifier": "{{userEmail}}",
+    "password": "{{userPassword}}"
 }
 
-#### 2. List Subjects (filters + pagination)
-GET {{baseUrl}}/api/subjects?pagination[pageSize]=10&pagination[page]=1&sort=name:asc
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-#### 3. Get Subject
-GET {{baseUrl}}/api/subjects/1
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-#### 4. Update Subject
-PUT {{baseUrl}}/api/subjects/1
+## 2.2 Signup / Register
+POST {{baseUrl}}/api/auth/local/register
 Content-Type: application/json
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
 
 {
-    "data": {
-        "name": "Cyber Security 101"
-    }
+    "username": "{{userUsername}}",
+    "email": "{{userEmail}}",
+    "password": "{{userPassword}}"
 }
 
-#### 5. Delete Subject
-DELETE {{baseUrl}}/api/subjects/1
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-### TEACHER
-
-#### 1. Create Teacher
-# @name createTeacher
-POST {{baseUrl}}/api/teachers
+## 2.3 Forgot Password
+POST {{baseUrl}}/api/auth/forgot-password
 Content-Type: application/json
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
 
 {
-    "data": {
-        "name": "Dr. Somchai"
-    }
+    "email": "{{userEmail}}"
 }
 
-#### 2. List Teachers
-GET {{baseUrl}}/api/teachers?filters[name][$eq]=Dr. Somchai
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-#### 3. Get Teacher
-GET {{baseUrl}}/api/teachers/1
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-#### 4. Update Teacher
-PUT {{baseUrl}}/api/teachers/1
+## 2.3.1 Reset Password
+# user ใช้ code + passwordConfirmation (code ยาว 128 ตัวอักษร)
+POST {{baseUrl}}/api/auth/reset-password
 Content-Type: application/json
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
 
 {
-    "data": {
-        "name": "Asst. Prof. Somchai"
-    }
+    "code": "",
+    "password": "{{userPassword}}",
+    "passwordConfirmation": "{{userPassword}}"
 }
 
-#### 5. Delete Teacher
-DELETE {{baseUrl}}/api/teachers/1
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+## 2.4 Profile
+GET {{baseUrl}}/api/users/me
+Authorization: Bearer {{userLogin.response.body.jwt}}
 
-### MAPPING (teacher 1 : subjects many)
+## 2.5 Update Profile
+# ยังใช้ไม่ได้ครับ ได้ 403 เพราะ role "Authenticated" ยังไม่มี permission
+# plugin::users-permissions.user.update (และไม่มี action นี้ในรายการ permission ของระบบ)
+# PUT {{baseUrl}}/api/users/me
+# Content-Type: application/json
+# Authorization: Bearer {{userLogin.response.body.jwt}}
+#
+# {
+#     "username": "{{userUsername}}"
+# }
 
-#### 1. Create Mapping (subjects ต้องมีอยู่จริง ไม่งั้น 400)
-# @name createMapping
-POST {{baseUrl}}/api/mappings
-Content-Type: application/json
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+##################################################
+# 3. Content
+# ทุก request ในหัวข้อนี้ต้องใช้ API Token จาก 1.6
+# {{createApiToken.response.body.data.accessKey}}
+# JWT ของ admin/user ใช้ยิง /api/* ไม่ได้ (ได้ 401)
+# ถ้าได้ 403 แปลว่า role ยังไม่มี permission
+# ให้ไปเปิดที่ Settings > Users & Permissions > Roles
+# ลำดับในไฟล์นี้ delete (3.x.4) มาก่อน get by id (3.x.5)
+# ถ้ารันตามลำดับแล้วลบไปแล้ว get by id จะได้ 404 ตามปกติ
+##################################################
 
-{
-    "data": {
-        "teacher": 1,
-        "subjects": [1, 2]
-    }
-}
+## 3.1 Student
+# หมายเหตุ mobile ถูก hash ด้วย md5 ใน lifecycle beforeCreate
+# mobile ต้องครบ 10 หลัก และ cardId ต้องครบ 13 หลักและห้ามซ้ำ
 
-#### 2. List Mappings (populate relation)
-GET {{baseUrl}}/api/mappings?populate=*
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-#### 3. Update Mapping
-PUT {{baseUrl}}/api/mappings/1
-Content-Type: application/json
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-{
-    "data": {
-        "teacher": 1,
-        "subjects": [1]
-    }
-}
-
-#### 4. Delete Mapping
-DELETE {{baseUrl}}/api/mappings/1
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-### STUDENT (mobile ถูก hash ด้วย md5 ใน lifecycle ตอน create)
-
-#### 1. Create Student (mobile ต้องครบ 10 หลัก และ cardId ครบ 13 หลัก)
+### 3.1.1 Create Student
 # @name createStudent
 POST {{baseUrl}}/api/students
 Content-Type: application/json
@@ -276,15 +169,12 @@ Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
     }
 }
 
-#### 2. List Students
+### 3.1.2 Get Student
 GET {{baseUrl}}/api/students
 Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
 
-#### 3. Get Student
-GET {{baseUrl}}/api/students/1
-Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
-
-#### 4. Update Student (beforeCreate เท่านั้นที่ hash mobile การ update จะไม่ถูก hash)
+### 3.1.3 Update Student
+# beforeCreate เท่านั้นที่ hash mobile การ update จะไม่ถูก hash
 PUT {{baseUrl}}/api/students/1
 Content-Type: application/json
 Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
@@ -295,6 +185,125 @@ Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
     }
 }
 
-#### 5. Delete Student
+### 3.1.4 Delete Student
 DELETE {{baseUrl}}/api/students/1
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+### 3.1.5 Get Student by id
+GET {{baseUrl}}/api/students/1
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+## 3.2 Teacher
+
+### 3.2.1 Create Teacher
+# @name createTeacher
+POST {{baseUrl}}/api/teachers
+Content-Type: application/json
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+{
+    "data": {
+        "name": "Dr. Somchai"
+    }
+}
+
+### 3.2.2 Get Teacher
+GET {{baseUrl}}/api/teachers?filters[name][$eq]=Dr. Somchai
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+### 3.2.3 Update Teacher
+PUT {{baseUrl}}/api/teachers/1
+Content-Type: application/json
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+{
+    "data": {
+        "name": "Asst. Prof. Somchai"
+    }
+}
+
+### 3.2.4 Delete Teacher
+DELETE {{baseUrl}}/api/teachers/1
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+### 3.2.5 Get Teacher by id
+GET {{baseUrl}}/api/teachers/1
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+## 3.3 Subject
+
+### 3.3.1 Create Subject
+# @name createSubject
+POST {{baseUrl}}/api/subjects
+Content-Type: application/json
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+{
+    "data": {
+        "name": "Cyber Security"
+    }
+}
+
+### 3.3.2 Get Subject
+GET {{baseUrl}}/api/subjects?pagination[pageSize]=10&pagination[page]=1&sort=name:asc
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+### 3.3.3 Update Subject
+PUT {{baseUrl}}/api/subjects/1
+Content-Type: application/json
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+{
+    "data": {
+        "name": "Cyber Security 101"
+    }
+}
+
+### 3.3.4 Delete Subject
+DELETE {{baseUrl}}/api/subjects/1
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+### 3.3.5 Get Subject by id
+GET {{baseUrl}}/api/subjects/1
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+## 3.4 Mapping
+# ความสัมพันธ์ teacher 1 : subjects many
+# subjects ต้องมีอยู่จริง ไม่งั้นได้ 400
+
+### 3.4.1 Create Mapping
+# @name createMapping
+POST {{baseUrl}}/api/mappings
+Content-Type: application/json
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+{
+    "data": {
+        "teacher": 1,
+        "subjects": [1, 2]
+    }
+}
+
+### 3.4.2 Get Mapping
+GET {{baseUrl}}/api/mappings?populate=*
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+### 3.4.3 Update Mapping
+PUT {{baseUrl}}/api/mappings/1
+Content-Type: application/json
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+{
+    "data": {
+        "teacher": 1,
+        "subjects": [1]
+    }
+}
+
+### 3.4.4 Delete Mapping
+DELETE {{baseUrl}}/api/mappings/1
+Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
+
+### 3.4.5 Get Mapping by id
+GET {{baseUrl}}/api/mappings/1?populate=*
 Authorization: Bearer {{createApiToken.response.body.data.accessKey}}
