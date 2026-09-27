@@ -140,16 +140,6 @@ Authorization: Bearer {{userLogin.response.body.jwt}}
 #     "username": "{{userUsername}}"
 # }
 
-##################################################
-# 3. Content
-# ทุก request ในหัวข้อนี้ต้องใช้ API Token จาก 1.6
-# {{createApiToken.response.body.data.accessKey}}
-# JWT ของ admin/user ใช้ยิง /api/* ไม่ได้ (ได้ 401)
-# ถ้าได้ 403 แปลว่า role ยังไม่มี permission
-# ให้ไปเปิดที่ Settings > Users & Permissions > Roles
-# ลำดับในไฟล์นี้ delete (3.x.4) มาก่อน get by id (3.x.5)
-# ถ้ารันตามลำดับแล้วลบไปแล้ว get by id จะได้ 404 ตามปกติ
-##################################################
 
 ## 3.1 Student
 # หมายเหตุ mobile ถูก hash ด้วย md5 ใน lifecycle beforeCreate
