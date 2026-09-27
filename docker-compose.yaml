@@ -2,6 +2,7 @@ services:
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: 69-s1-admin
+    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
@@ -13,6 +14,7 @@ services:
   db:
     image: postgres:16-alpine
     container_name: 69-s1-db
+    restart: unless-stopped
     ports:
       - "${POSTGRES_PORT}:5432"
     environment:
@@ -21,17 +23,24 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - ./data-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   mailhog:
     image: mailhog/mailhog:v1.0.1
     container_name: 69-s1-mailhog
+    restart: unless-stopped
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "${MAILHOG_PORT:-1025}:1025"
+      - "${MAILHOG_UI_PORT:-8025}:8025"
 
   app:
     image: prawee/strapi
     container_name: 69-s1-app
+    restart: unless-stopped
     ports:
       - "${APP_PORT}:1337"
     environment:
@@ -41,14 +50,15 @@ services:
       - DATABASE_NAME=${DATABASE_NAME}
       - DATABASE_USERNAME=${DATABASE_USERNAME}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - APP_URL=${APP_URL:-http://localhost:9091}
       - SMTP_HOST=mailhog
       - SMTP_PORT=1025
       - SMTP_FROM=no-reply@cybersec.local
     volumes:
       - ./config/plugins.js:/opt/app/config/plugins.js
+      - ./config/server.js:/opt/app/config/server.js
     depends_on:
-      - db
-      - mailhog
-
-volumes:
-  data-postgres:
+      db:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
